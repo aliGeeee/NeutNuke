@@ -17,7 +17,7 @@ def modParams(paramDict):
 	params.filterByInertia = False if iner==(None,None) else True
 
 	#setting min and max params
-	(params.minThreshold, params.maxThreshold) = (127,255)
+	(params.minThreshold, params.maxThreshold) = (10,170)
 	(params.minArea, params.maxArea) = area
 	(params.minCircularity, params.maxCircularity) = circ
 	(params.minConvexity, params.maxConvexity) = conv
@@ -58,7 +58,7 @@ def findParams(param, reso):
 
 # Read image and threshold
 img = cv2.imread("blob.png", cv2.IMREAD_GRAYSCALE)
-ret, thresh = cv2.threshold(img, 127, 254, cv2.THRESH_BINARY_INV)
+ret, thresh = cv2.threshold(img, 127, 254, cv2.THRESH_BINARY)
 
 # Check for existence of blobs
 params = modParams({})
