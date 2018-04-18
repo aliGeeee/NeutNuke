@@ -16,7 +16,8 @@ except:
 
 #setting manual threshold values
 cellThreshValue = 200
-nucThreshValue = 110
+nucThreshValue = 80
+otsu = True
 
 try:
 	dirs = os.listdir('images')
@@ -103,10 +104,22 @@ for imageFile in dirs:
 				cv2.imwrite("%s/cells/%s/%s.jpg"%(outputDir,name,name), imgTxt)
 
 				#nuclear analysis
-				rawROI = rawROI.astype(np.uint8)
-				gray = cv2.cvtColor(rawROI, cv2.COLOR_BGR2GRAY)
 
-				ret, nucThresh = cv2.threshold(gray, nucThreshValue, 255, cv2.THRESH_BINARY_INV)
+				rawROI = rawROI.astype(np.uint8)
+				cellGrey = cv2.cvtColor(rawROI, cv2.COLOR_BGR2GRAY)
+
+				if otsu:
+					noBackCellGrey = []
+					for j in cellGrey.tolist():
+						for i in j:
+							if i < 250:
+								noBackCellGrey.append(i)
+
+					retFG, fakeNucThresh = cv2.threshold(np.array(noBackCellGrey).astype(np.uint8), 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+					ret, nucThresh = cv2.threshold(cellGrey, retFG, 255, cv2.THRESH_BINARY_INV)
+				else:
+					ret, nucThresh = cv2.threshold(cellGrey, nucThreshValue, 255, cv2.THRESH_BINARY_INV)
+
 				cv2.imwrite('%s/cells/%s/thresh_120.jpg'%(outputDir,name), nucThresh)
 
 				ret, nucConRaw, hierarchy = cv2.findContours(nucThresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
@@ -131,11 +144,13 @@ for imageFile in dirs:
 					totNucArea += locTotNucArea
 
 	#saving stats as CSVs
-	nucDF = pd.DataFrame(np.array(nucData), columns = ["Cell", "Nucleus", "Area Fraction", "Circularity", "Convexity"])
-	nucDF.to_csv('%s/nucStats.csv'%outputDir)
+	if len(nucData) > 0:
+		nucDF = pd.DataFrame(np.array(nucData), columns = ["Cell", "Nucleus", "Area Fraction", "Circularity", "Convexity"])
+		nucDF.to_csv('%s/nucStats.csv'%outputDir)
 
-	cellDF = pd.DataFrame(np.array(cellData), columns = ["Cell", "Cell Area", "Nuc Fraction", "No. Nuclear Frags"])
-	cellDF.to_csv('%s/cellStats.csv'%outputDir)
+	if len(cellData) > 0:
+		cellDF = pd.DataFrame(np.array(cellData), columns = ["Cell", "Cell Area", "Nuc Fraction", "No. Nuclear Frags"])
+		cellDF.to_csv('%s/cellStats.csv'%outputDir)
 
 	#generating some summary stats
 	nucCircMean = round(np.mean(nucDF['Circularity'].values.astype('float')[nucDF['Area Fraction'].values.astype('float') > 0.1]), 3)
