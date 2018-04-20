@@ -61,6 +61,7 @@ for imageFile in dirs:
 	totCellArea = 0
 	totNucArea = 0
 	validCells = 0
+	totNucCount = 0
 
 	#iterate through contours and isolate
 	for i in range(len(cellCon)):
@@ -142,6 +143,7 @@ for imageFile in dirs:
 				if n>0:
 					cellData.append([name, cellArea, round(locTotNucArea/cellArea, 3), n])
 					totNucArea += locTotNucArea
+					totNucCount += n
 
 	#saving stats as CSVs
 	if len(nucData) > 0:
@@ -159,8 +161,10 @@ for imageFile in dirs:
 	nucConvMean = round(np.mean(nucDF['Convexity'].values.astype('float')[nucDF['Area Fraction'].values.astype('float') > 0.1]), 3)
 	nucConvSD = round(np.std(nucDF['Convexity'].values.astype('float')[nucDF['Area Fraction'].values.astype('float') > 0.1]), 3)
 
+	nucCountMean = round(totNucCount/validCells, 3)
+
 	#saving whole image data
-	imageData.append([imageFile, len(cellCon), validCells, round(totNucArea/totCellArea, 3), nucCircMean, nucCircSD, nucConvMean, nucConvSD])
+	imageData.append([imageFile, len(cellCon), validCells, round(totNucArea/totCellArea, 3), nucCircMean, nucCircSD, nucConvMean, nucConvSD, nucCountMean])
 
 	#plotting some scatterplots
 	xQuant = 'Convexity'
@@ -176,7 +180,7 @@ for imageFile in dirs:
 	plt.savefig('%s/testScatter.jpg'%outputDir)
 	plt.close()
 
-imgDF = pd.DataFrame(np.array(imageData), columns = ["Image File", "No. Cells", "No. Valid Cells", "Nuc. Area Frac.", "Circ. Mean", "Circ. SD", "Conv. Mean", "Conv. SD"])
+imgDF = pd.DataFrame(np.array(imageData), columns = ["Image File", "No. Cells", "No. Valid Cells", "Nuc. Area Frac.", "Circ. Mean", "Circ. SD", "Conv. Mean", "Conv. SD", "n Mean"])
 imgDF.to_csv('output/imageStats.csv')
 
 print("Done")
