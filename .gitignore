@@ -1,5 +1,7 @@
-output/
+output*/
 .DS_Store
+images*/
+ImagesBackup/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
