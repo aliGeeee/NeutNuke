@@ -1,26 +1,26 @@
 import numpy as np
 import pandas as pd
+import scipy as sp
+from scipy import signal
 import cv2
 from matplotlib import pyplot as plt
 import os
 import copy
-from progress.bar import Bar
-
-inputNo = input()
+import multiprocessing as mp
 
 #setting manual values
 cellThreshValue = 200
 nucThreshValue = 80
-
-mainOutputDir = 'output%s'%inputNo
-mainInputDir = 'images%s'%inputNo
+mainOutputDir = 'output'
+mainInputDir = 'cells'
+otsu = True
 
 #function for calculating circularity
 def calcCirc(cont):
 	return 4*np.pi*cv2.contourArea(cont)/cv2.arcLength(cont, True)**2
 
 try:
-	outDirs = os.listdir(mainOutputDir)
+	inDirs = os.listdir(mainInputDir)
 except:
 	print("Make sure you have run 'cellIsolation.py' before running 'nucAnalysis.py'.")
 	quit()
@@ -28,32 +28,34 @@ except:
 imageData = []
 
 #importing image and making grayscale
-for imageDir in outDirs:
-	if imageDir == ".DS_Store" or imageDir == "._.DS_Store":
-		continue
-
+for imageDir in inDirs:
 	print("Analysing nuclei in %s..."%imageDir)
-	imageOutDir = '%s/%s'%(mainOutputDir, imageDir)
+	cellsDir = '%s/%s'%(mainInputDir, imageDir)
+	ROIDirs = os.listdir(cellsDir)
 
-	ROIDirs = os.listdir("%s/cells"%imageOutDir)
+	try:
+		os.mkdir(mainOutputDir)
+		os.mkdir("%s/%s"%(mainOutputDir, imageDir))
+	except:
+		pass
 
-	bar = Bar('\tProcessing', max=noCellCon)
-	for ROI in ROIDirs:
-		bar.next()
+	def mainFunc(ROI):
+	#for ROI in [i for i in ROIDirs if i not in (".DS_Store", "._.DS_Store")]:
 		try:
-			img = cv2.imread('%s/cells/%s.jpg'%(imageOutDir, ROI))
-			img = img[:img.shape[0]-30,:]
+			print("%s/%s"%(cellsDir,ROI))
+			img = cv2.imread("%s/%s"%(cellsDir,ROI))
+			img = img[:img.shape[0]-30].astype(np.uint8)
 			gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 		except:
 			print("%s isn't an image file!"%ROI)
 			continue
 		
+
 		#thresholding for cells
 		ret, cellThresh = cv2.threshold(gray, cellThreshValue, 255, cv2.THRESH_BINARY_INV)
-
 		#generating contours around cells
 		img2, cellCon, hierarchy = cv2.findContours(cellThresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
+		print("Yes")
 		#generate output and summary stats
 		nucData = []
 		cellData = []
@@ -63,7 +65,6 @@ for imageDir in outDirs:
 		totNucCount = 0
 
 		#iterate through contours and isolate
-		
 		cellArea = cv2.contourArea(cellCon[0])
 		totCellArea += cellArea
 		x, y, width, height = cv2.boundingRect(cellCon[0])
@@ -73,19 +74,30 @@ for imageDir in outDirs:
 		cellGrey = cv2.cvtColor(cell, cv2.COLOR_BGR2GRAY)
 
 		#nuclear masking
-		if otsu:
-			noBackCellGrey = []
-			for j in cellGrey.tolist():
-				for i in j:
-					if i < 200:
-						noBackCellGrey.append(i)
+		noBackCellGrey = []
+		for j in cellGrey.tolist():
+			for i in j:
+				if i < 200:
+					noBackCellGrey.append(i)
 
-			retFG, fakeNucThresh = cv2.threshold(np.array(noBackCellGrey).astype(np.uint8), 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
-			ret, nucThresh = cv2.threshold(cellGrey, retFG, 255, cv2.THRESH_BINARY_INV)
-		else:
-			ret, nucThresh = cv2.threshold(cellGrey, nucThreshValue, 255, cv2.THRESH_BINARY_INV)
+		retFG, fakeNucThresh = cv2.threshold(np.array(noBackCellGrey).astype(np.uint8), 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
 
-		cv2.imwrite('%s/cells/%s/mask.jpg'%(imageOutDir,ROI), nucThresh)
+		histArray = np.array(np.histogram(np.array(noBackCellGrey), bins=range(255)))
+		smoothed = signal.savgol_filter(histArray[0], 25, 2)
+
+		dip1 = smoothed[int(retFG)]
+		leftPeak = max(smoothed[:int(retFG)])
+		rightPeak = max(smoothed[int(retFG):])
+		realdip = min(smoothed[list(smoothed).index(leftPeak):list(smoothed).index(rightPeak)])
+
+		if leftPeak/realdip < 6 or rightPeak/realdip < 3:
+			continue
+
+		nucThreshValue = list(smoothed).index(realdip)
+		ret, nucThresh = cv2.threshold(cellGrey, nucThreshValue, 255, cv2.THRESH_BINARY_INV)
+
+		cv2.imwrite('%s/%s/%s/mask.jpg'%(mainOutputDir, imageDir, ROI), nucThresh)
+		cv2.imwrite('%s/%s/%s/cell.jpg'%(mainOutputDir, imageDir, ROI), cell)
 
 		ret, nucConRaw, hierarchy = cv2.findContours(nucThresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
 		nucCon = sorted(nucConRaw, key=lambda x: -cv2.contourArea(x))
@@ -108,29 +120,28 @@ for imageDir in outDirs:
 			cellData.append([ROI, cellArea, round(locTotNucArea/cellArea, 3), n])
 			totNucArea += locTotNucArea
 			totNucCount += n
-	bar.finish()
 
 		#dataanalysis section
 		#saving stats as CSVs
-	if len(nucData) > 0:
-		nucDF = pd.DataFrame(np.array(nucData), columns = ["Cell", "Nucleus", "Area Fraction", "Circularity", "Convexity"])
-		nucDF.to_csv('%s/nucStats.csv'%outputDir)
+	# if len(nucData) > 0:
+	# 	nucDF = pd.DataFrame(np.array(nucData), columns = ["Cell", "Nucleus", "Area Fraction", "Circularity", "Convexity"])
+	# 	nucDF.to_csv('%s/nucStats.csv'%outputDir)
 
-	if len(cellData) > 0:
-		cellDF = pd.DataFrame(np.array(cellData), columns = ["Cell", "Cell Area", "Nuc Fraction", "No. Nuclear Frags"])
-		cellDF.to_csv('%s/cellStats.csv'%outputDir)
+	# if len(cellData) > 0:
+	# 	cellDF = pd.DataFrame(np.array(cellData), columns = ["Cell", "Cell Area", "Nuc Fraction", "No. Nuclear Frags"])
+	# 	cellDF.to_csv('%s/cellStats.csv'%outputDir)
 
 	#generating some summary stats
-	nucCircMean = round(np.mean(nucDF['Circularity'].values.astype('float')[nucDF['Area Fraction'].values.astype('float') > 0.1]), 3)
-	nucCircSD = round(np.std(nucDF['Circularity'].values.astype('float')[nucDF['Area Fraction'].values.astype('float') > 0.1]), 3)
+	#nucCircMean = round(np.mean(nucDF['Circularity'].values.astype('float')[nucDF['Area Fraction'].values.astype('float') > 0.1]), 3)
+	#nucCircSD = round(np.std(nucDF['Circularity'].values.astype('float')[nucDF['Area Fraction'].values.astype('float') > 0.1]), 3)
 
-	nucConvMean = round(np.mean(nucDF['Convexity'].values.astype('float')[nucDF['Area Fraction'].values.astype('float') > 0.1]), 3)
-	nucConvSD = round(np.std(nucDF['Convexity'].values.astype('float')[nucDF['Area Fraction'].values.astype('float') > 0.1]), 3)
+	#nucConvMean = round(np.mean(nucDF['Convexity'].values.astype('float')[nucDF['Area Fraction'].values.astype('float') > 0.1]), 3)
+	#nucConvSD = round(np.std(nucDF['Convexity'].values.astype('float')[nucDF['Area Fraction'].values.astype('float') > 0.1]), 3)
 
-	nucCountMean = round(totNucCount/validCells, 3)
+	#nucCountMean = round(totNucCount/validCells, 3)
 
 	#saving whole image data
-	imageData.append([imageDir, len(cellCon), validCells, round(totNucArea/totCellArea, 3), nucCircMean, nucCircSD, nucConvMean, nucConvSD, nucCountMean])
+	#imageData.append([imageDir, len(cellCon), validCells, round(totNucArea/totCellArea, 3), nucCircMean, nucCircSD, nucConvMean, nucConvSD, nucCountMean])
 
 	#plotting some scatterplots
 	# xQuant = 'Convexity'
@@ -146,7 +157,13 @@ for imageDir in outDirs:
 	# plt.savefig('%s/testScatter.jpg'%outputDir)
 	# plt.close()
 
-imgDF = pd.DataFrame(np.array(imageData), columns = ["Image File", "No. Cells", "No. Valid Cells", "Nuc. Area Frac.", "Circ. Mean", "Circ. SD", "Conv. Mean", "Conv. SD", "n Mean"])
-imgDF.to_csv('%s/imageStats.csv'%mainOutputDir)
+	with mp.Pool(mp.cpu_count()) as p:
+		p.map(mainFunc, [i for i in ROIDirs if i not in (".DS_Store", "._.DS_Store")])
+	p.terminate()
+
+
+# imgDF = pd.DataFrame(np.array(imageData), columns = ["Image File", "No. Cells", "No. Valid Cells",
+#		 "Nuc. Area Frac.", "Circ. Mean", "Circ. SD", "Conv. Mean", "Conv. SD", "n Mean"])
+# imgDF.to_csv('%s/imageStats.csv'%mainOutputDir)
 
 print("Done")
