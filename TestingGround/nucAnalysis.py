@@ -81,31 +81,25 @@ for ROI in [i for i in ROIDirs if i not in ('.DS_Store', '._.DS_Store')]:
 	histArray = np.array(np.histogram(np.array(noBackCellGrey), bins=range(255)))
 	smoothed = signal.savgol_filter(histArray[0], 25, 2)
 
+	dip1 = smoothed[int(retFG)]
+	leftPeak = max(smoothed[:int(retFG)])
+	rightPeak = max(smoothed[int(retFG):])
+	leftPeakLoc = list(smoothed).index(leftPeak)
+	rightPeakLoc = list(smoothed).index(rightPeak)
 	try:
-		dip1 = smoothed[int(retFG)]
-		leftPeak = max(smoothed[:int(retFG)])
-		rightPeak = max(smoothed[int(retFG):])
-		leftPeakLoc = list(smoothed).index(leftPeak)
-		rightPeakLoc = list(smoothed).index(rightPeak)
-		realdip = min(smoothed[leftPeakLoc:rightPeakLoc])
-
-		if leftPeak/realdip < 5 or rightPeak/realdip < 3:
-			#print("Reject %s"%ROI)
-			c.execute('''INSERT INTO Cells (name, acceptable) VALUES (?,?);''', (ROI[:-4], False,))
-			report.write('\tBimodal: FALSE\n')
-			cellID = False
-			continue
-
-		rawNucThreshValue = list(smoothed).index(realdip)
-		nucThreshValue = (min(rawNucThreshValue, 110)-25)*threshFactor+25
+		realdip = min(smoothed[leftPeakLoc:RightPeakLoc])
 	except:
+		realdip = dip1
+
+	if leftPeak/realdip < 4 or rightPeak/realdip < 2:
+		#print("Reject %s"%ROI)
 		c.execute('''INSERT INTO Cells (name, acceptable) VALUES (?,?);''', (ROI[:-4], False,))
 		report.write('\tBimodal: FALSE\n')
 		cellID = False
 		continue
 
-		nucThreshValue = retFG
-
+	rawNucThreshValue = list(smoothed).index(realdip)
+	nucThreshValue = (min(rawNucThreshValue, 110)-25)*threshFactor+25
 	ret, nucThresh = cv2.threshold(cellGrey, nucThreshValue, 255, cv2.THRESH_BINARY_INV)
 
 	try:
@@ -127,7 +121,7 @@ for ROI in [i for i in ROIDirs if i not in ('.DS_Store', '._.DS_Store')]:
 
 	#nuclear analysis
 
-	nucMinArea = int(cellArea*0.05)
+	nucMinArea = 80
 	ret, nucCon, hierarchyRaw = cv2.findContours(nucThresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
 	nucData = {i:{'hierarchy':list(hierarchyRaw[0][i])} for i in range(len(nucCon)) if cv2.contourArea(nucCon[i]) > nucMinArea}
 

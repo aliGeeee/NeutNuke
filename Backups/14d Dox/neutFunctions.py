@@ -97,11 +97,10 @@ def countLobes(rawGrey):
 			self.colours = []
 			self.finalSeed = np.zeros(startArray.shape, np.uint8)
 
-			self.erode(kernelDef=np.asarray([[0,1,0],[1,1,1],[0,1,0]], np.uint8))
-			#self.erode()
+			self.erode()
 
-		def erode(self, kernelDef=np.ones((3,3), np.uint8)):
-			self.newArray = cv2.erode(self.array, kernel = kernelDef, iterations = 1)
+		def erode(self):
+			self.newArray = cv2.erode(self.array, kernel = np.ones((3,3), np.uint8), iterations = 1)
 
 			ret, self.rawCons, self.erodeHierarchy = cv2.findContours(self.newArray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			self.cons = [self.rawCons[i] for i in range(len(self.rawCons)) if self.erodeHierarchy[0][i][3] == -1]
@@ -288,16 +287,4 @@ def myColourMap(img):
 		if list(finalImg[pt]) == [0, 0, 255]:
 			finalImg[pt] = np.asarray([0, 0, 0])
 	return finalImg
-
-def replaceStuff(x):
-	y = x.split('_')
-	dayDict = {str(i*2)+'d':str(i) for i in range(0,8)}
-	try:
-		return '{}_{}_{}'.format(y[0], y[2], dayDict[y[1]])
-	except:
-		print(x, 'ERROR')
-		raise ValueError
-
-def sortFileNames(fileList):
-	return sorted(fileList, key=lambda x:replaceStuff(x))
 

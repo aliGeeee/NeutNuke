@@ -1,10 +1,12 @@
 output*/
-.DS_Store
+*.DS_Store
 images*/
 ImagesBackup/
 output*/
 *.jpg
 *.png
+*.tif
+*.tiff
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

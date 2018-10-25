@@ -42,10 +42,7 @@ def createDB(outputDir):
 		netNucArea real,
 		nucObjs integer,
 		circ2 real,
-		lobes integer,
-		cytoIntensity real,
-		nucIntensity real,
-		dipIntensity real
+		lobes integer
 		);''')
 	c.execute('''CREATE TABLE NuclearBlobs (
 		id integer PRIMARY KEY,
@@ -64,6 +61,7 @@ def createDB(outputDir):
 def createResultFiles():
 	return None
 
+
 def clean(grey, minArea):
 	ret, cellThresh1 = cv2.threshold(grey, 128, 255, cv2.THRESH_BINARY)
 	ret, rawCellCon1, hierarchy = cv2.findContours(cellThresh1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -80,7 +78,9 @@ def clean(grey, minArea):
 	mask = cv2.bitwise_and(mask1, mask2)
 	cleanGrey = cv2.bitwise_xor(grey, mask)
 
-	return cleanGrey
+	ret, cleanGrey2 = cv2.threshold(cleanGrey, 128, 255, cv2.THRESH_BINARY)
+
+	return cleanGrey2
 
 def countLobes(rawGrey):
 	class LobeRemnant(object):
@@ -97,11 +97,10 @@ def countLobes(rawGrey):
 			self.colours = []
 			self.finalSeed = np.zeros(startArray.shape, np.uint8)
 
-			self.erode(kernelDef=np.asarray([[0,1,0],[1,1,1],[0,1,0]], np.uint8))
-			#self.erode()
+			self.erode()
 
-		def erode(self, kernelDef=np.ones((3,3), np.uint8)):
-			self.newArray = cv2.erode(self.array, kernel = kernelDef, iterations = 1)
+		def erode(self):
+			self.newArray = cv2.erode(self.array, kernel = np.ones((3,3), np.uint8), iterations = 1)
 
 			ret, self.rawCons, self.erodeHierarchy = cv2.findContours(self.newArray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			self.cons = [self.rawCons[i] for i in range(len(self.rawCons)) if self.erodeHierarchy[0][i][3] == -1]
@@ -114,7 +113,7 @@ def countLobes(rawGrey):
 
 			#one way forward
 			elif len(self.cons) == 1:
-				if self.iter < 10:
+				if self.iter < 10000:
 					self.iter += 1
 					self.allIter += 1
 					self.array = self.newArray
@@ -219,7 +218,7 @@ def countLobes(rawGrey):
 	# mask = np.zeros(grey.shape, np.uint8)
 	# cv2.drawContours(mask, initCons, -1, 255, -1)
 
-	mask = clean(rawGrey, 20)
+	mask = clean(rawGrey, 200)
 
 	#generating lobes
 	x = LobeRemnant(lineage=[0], allIter=0, startArray=mask)
@@ -247,26 +246,6 @@ def countLobes(rawGrey):
 
 	return (termsToReturn, myColourMap(finalImg))
 
-def clean(grey, minArea):
-	ret, cellThresh1 = cv2.threshold(grey, 128, 255, cv2.THRESH_BINARY)
-	ret, rawCellCon1, hierarchy = cv2.findContours(cellThresh1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-	cellCon1 = [x for x in rawCellCon1 if cv2.contourArea(x)<minArea]
-	mask1 = np.zeros(grey.shape, np.uint8)
-	cv2.drawContours(mask1, cellCon1, -1, 255, -1)
-
-	ret, cellThresh2 = cv2.threshold(grey, 128, 255, cv2.THRESH_BINARY_INV)
-	ret, rawCellCon2, hierarchy = cv2.findContours(cellThresh2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-	cellCon2 = [x for x in rawCellCon2 if cv2.contourArea(x)<minArea]
-	mask2 = np.zeros(grey.shape, np.uint8)
-	cv2.drawContours(mask2, cellCon2, -1, 255, -1)
-
-	mask = cv2.bitwise_and(mask1, mask2)
-	cleanGrey = cv2.bitwise_xor(grey, mask)
-
-	ret, cleanGrey2 = cv2.threshold(cleanGrey, 128, 255, cv2.THRESH_BINARY)
-
-	return cleanGrey2
-
 def testParent(parent, child):
 	for i in range(len(parent)):
 		if parent[i] != child[i]:
@@ -288,16 +267,4 @@ def myColourMap(img):
 		if list(finalImg[pt]) == [0, 0, 255]:
 			finalImg[pt] = np.asarray([0, 0, 0])
 	return finalImg
-
-def replaceStuff(x):
-	y = x.split('_')
-	dayDict = {str(i*2)+'d':str(i) for i in range(0,8)}
-	try:
-		return '{}_{}_{}'.format(y[0], y[2], dayDict[y[1]])
-	except:
-		print(x, 'ERROR')
-		raise ValueError
-
-def sortFileNames(fileList):
-	return sorted(fileList, key=lambda x:replaceStuff(x))
 

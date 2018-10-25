@@ -1,0 +1,2 @@
+rsync -zarv -m --include="*/" --include='*.db' --include='*/cell.png' --exclude='*' unix500.hpc.wehi.edu.au:/home/gu.a/NeutScripts/NeutNuke/Main2/output ./14dDoxYes/
+#--include='*.jpg' --include='*.png' --include='*lobes.png'

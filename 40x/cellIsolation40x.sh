@@ -3,4 +3,4 @@ module load parallel
 source activate neutScriptsEnv
 
 arr=(./images/*)
-parallel python cellIsolation.py ::: "${arr[@]}"
+parallel python cellIsolation40x.py ::: "${arr[@]}"

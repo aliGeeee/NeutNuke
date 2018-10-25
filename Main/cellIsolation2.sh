@@ -1,1 +1,0 @@
-python cellIsolation.py "$1"

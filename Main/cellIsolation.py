@@ -9,26 +9,40 @@ import neutFunctions as nf
 #from progress.bar import Bar
 
 print("HelloWorld")
-imageFile = sys.argv[1]
-print(imageFile)
+fileFile = sys.argv[1]
+
+#importing image and making grayscale
+if '.DS_Store' in fileFile or '._.DS_Store' in fileFile:
+	print('Skipping DS_Store')
+	exit()
+
+x = os.listdir(fileFile)
+if '.DS_Store' in x[0] or '._.DS_Store' in x[0]:
+	imageFile = fileFile + '/' + x[1]
+else:
+	imageFile = fileFile + '/' + x[0]
 
 #setting manual values
 cellThreshValue = 200
 areaMin = 2000
-areaMax = 6000
+areaMax = 10000
 annotateArea = True
 
 #creating an output directory
+outputMainDir = 'cells'
+
 try:
-	os.mkdir('cells')
+	os.mkdir(outputMainDir)
 except:
 	pass
 
 #importing image and making grayscale
 if '.DS_Store' not in imageFile and '._.DS_Store' not in imageFile:
-	print("Isolating cells from %s..."%imageFile)
-	
-	img = cv2.imread(imageFile).astype(np.uint8)
+	try:
+		img = cv2.imread(imageFile).astype(np.uint8)
+	except:
+		print('{} IS TOO LARGE'.format(imageFile))
+		exit()
 	gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 	#thresholding for cells
 	ret, cellThresh = cv2.threshold(gray, cellThreshValue, 255, cv2.THRESH_BINARY_INV)
@@ -43,7 +57,7 @@ if '.DS_Store' not in imageFile and '._.DS_Store' not in imageFile:
 	validCells = 0
 	totNucCount = 0
 
-	outputDir = 'cells/%s'%imageFile.replace('./images/','')[:-4]
+	outputDir = '{}/{}'.format(outputMainDir, fileFile.replace('./images/',''))
 	try:
 		os.mkdir(outputDir)
 	except:
@@ -79,8 +93,6 @@ if '.DS_Store' not in imageFile and '._.DS_Store' not in imageFile:
 				rawROI = np.zeros((height+2*margin, width+2*margin, 3))+255
 				rawROI[margin:margin+height, margin:margin+width] = res2[y:y+height, x:x+width] 
 
-				print("\tIsolated a cell from %s..."%imageFile)
-
 				#checking for clarity
 				if annotateArea:
 					imgTxt = copy.copy(rawROI)
@@ -90,4 +102,6 @@ if '.DS_Store' not in imageFile and '._.DS_Store' not in imageFile:
 					cv2.imwrite("%s/%s.jpg"%(outputDir,name), rawROI)
 	#bar.finish()
 
-print("Done")
+	print("Done with {}".format(imageFile))
+else:
+	print("Error with {}".format(imageFile))
