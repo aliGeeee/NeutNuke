@@ -15,16 +15,18 @@ Documentation for NeutNuke
 Installation
 ==================
 
-Clone this repository by using git clone .
+Clone this repository by running
+``git clone https://github.com/aliGeeee/NeutNuke.git``
+Alternatively, visit 'this repository on GitHub <https://github.com/aliGeeee/NeutNuke>' and download a .zip file.
 
 
 Use
 ==================
 
-1. Run main/firstRun.sh to create an Anaconda environment.
-2. For each microscope image, create a directory with the name of the sample within main/images. Place the image in this directory. For example, for a sample entitled Sample1, the image should be located in main/images/Sample1/image.tiff
-3. Run main/job.sh.
-4. Output graphs and CSVs are located in main/summaries/graphs and main/summaries/csvs respectively.
+1. Run ``main/firstRun.sh`` to create an Anaconda environment.
+2. For each microscope image, create a directory with the name of the sample within ``main/images``. Place the image in this directory. For example, for a sample entitled *Sample1*, the image should be located in ``main/images/Sample1/anyImageName.tiff``
+3. Run ``main/job.sh``.
+4. Output graphs and CSVs are located in ``main/summaries/graphs`` and ``main/summaries/csvs`` respectively.
 
 
 Support
