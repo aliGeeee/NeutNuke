@@ -1,6 +1,9 @@
 output*/
 *.DS_Store
 images*/
+cells*/
+csvs*/
+graphs*/
 ImagesBackup/
 output*/
 *.jpg

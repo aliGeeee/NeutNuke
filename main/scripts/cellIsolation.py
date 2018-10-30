@@ -8,7 +8,6 @@ import sys
 import neutFunctions as nf
 #from progress.bar import Bar
 
-print("HelloWorld")
 fileFile = sys.argv[1]
 
 #importing image and making grayscale
@@ -29,7 +28,8 @@ areaMax = 10000
 annotateArea = True
 
 #creating an output directory
-outputMainDir = 'cells'
+outputMainDir = '../cells'
+prefix = './../images/'
 
 try:
 	os.mkdir(outputMainDir)
@@ -57,7 +57,8 @@ if '.DS_Store' not in imageFile and '._.DS_Store' not in imageFile:
 	validCells = 0
 	totNucCount = 0
 
-	outputDir = '{}/{}'.format(outputMainDir, fileFile.replace('./images/',''))
+	imgName = fileFile.replace(prefix,'')
+	outputDir = '{}/{}'.format(outputMainDir, imgName)
 	try:
 		os.mkdir(outputDir)
 	except:
@@ -79,7 +80,7 @@ if '.DS_Store' not in imageFile and '._.DS_Store' not in imageFile:
 			#excluding cells on edges
 			if not (x == 0 or x+width >= img.shape[1] or y == 0 or y+height >= img.shape[0]):
 				validCells += 1
-				name = "ROI_%s"%str(i)
+				name = "{}_cell{}".format(imgName, str(validCells))
 
 				#creating mask for cells
 				rawMask = np.zeros((img.shape[0], img.shape[1], 1), dtype = "uint8")
@@ -102,6 +103,6 @@ if '.DS_Store' not in imageFile and '._.DS_Store' not in imageFile:
 					cv2.imwrite("%s/%s.jpg"%(outputDir,name), rawROI)
 	#bar.finish()
 
-	print("Done with {}".format(imageFile))
+	print("\tDone with {}".format(imageFile))
 else:
-	print("Error with {}".format(imageFile))
+	print("\tError with {}".format(imageFile))

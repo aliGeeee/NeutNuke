@@ -1,1 +1,1 @@
-rsync -zarv -m --include="*/" --include='*.py' --include='*.sh' --exclude='*' . unix500.hpc.wehi.edu.au:/home/gu.a/NeutScripts/NewNeutNuke/Main
+rsync -zarv -m --include="*/" --include='*.py' --include='*.sh' --exclude='*' . unix500.hpc.wehi.edu.au:/home/gu.a/NeutScripts/NeutNuke/main/scripts

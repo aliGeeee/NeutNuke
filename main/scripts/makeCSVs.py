@@ -11,23 +11,20 @@ import sys
 sys.path.append('..')
 import neutFunctions as nf
 
-outputMain = '../outputClone'
-sumDir = 'pics'
-csvOutput = 'CSV'
+outputMain = '../output'
+csvOutput = '../csvs'
 try:
 	os.mkdir(csvOutput)
 except:
 	pass
 
-slides = nf.sortFileNames([i for i in os.listdir(outputMain) if '.DS_Store' not in i])
-uniqueCloneSet = set([i[0] for i in [j.split('_') for j in slides]])
-uniqueDaySet = set([i[1] for i in [j.split('_') for j in slides]])
+slides = sorted([i for i in os.listdir(outputMain) if '.DS_Store' not in i])
 
 
 countDonuts = False
 categoryRange = range(1,7)
 
-dictToDF = {'clone':[], 'day':[], 'replicate':[], 'nNotDonut':[], 'n':[], 'donutFrac':[]}
+dictToDF = {'slide':[], 'nNotDonut':[], 'nTot':[], 'donutFrac':[]}
 for i in categoryRange:
 	dictToDF[str(i)] = []
 
@@ -56,10 +53,7 @@ for slide in slides:
 			noDonutLobes.append(c.fetchone()[0])
 	
 	n = len(noDonutLobes)
-	x = slide.split('_')
-	dictToDF['clone'].append(x[0])
-	dictToDF['day'].append(x[1])
-	dictToDF['replicate'].append(x[2])
+	dictToDF['slide'].append(slide)
 	dictToDF['nNotDonut'].append(n)
 
 	for i in categoryRange:
@@ -73,7 +67,7 @@ for slide in slides:
 	#analysing donuts
 	c.execute('''SELECT id FROM Cells WHERE acceptable;''')
 	acceptableCells = [i[0] for i in c.fetchall()]
-	dictToDF['n'].append(len(acceptableCells))
+	dictToDF['nTot'].append(len(acceptableCells))
 	noDonuts = 0
 	for cellId in acceptableCells:
 		c.execute('''SELECT donutObjs FROM NuclearBlobs WHERE cellID = ?;''', (cellId,))
@@ -101,15 +95,3 @@ for slide in slides:
 
 df = pd.DataFrame(data=dictToDF)
 df.to_csv('{}/all.csv'.format(csvOutput))
-
-for unique in uniqueCloneSet:
-	uniqueDF = df.loc[df['clone'] == unique]
-	uniqueDF.to_csv('{}/{}_old.csv'.format(csvOutput, unique))
-
-for unique in uniqueDaySet:
-	uniqueDF = df.loc[df['day'] == unique]
-	uniqueDF.to_csv('{}/{}_old.csv'.format(csvOutput, unique))
-
-# for unique in uniqueDaySet:
-# 	uniqueDF = df.loc[df['circ'] == unique]
-# 	unuqueDF.to_csv('{}/{}.csv'.format(csvOutput, unique))

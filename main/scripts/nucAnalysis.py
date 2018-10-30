@@ -13,8 +13,9 @@ import sqlite3
 import sys
 
 #setting manual values
-cellThreshValue = 200
+cellThreshValue = 220
 threshFactor = 0.8
+donutCutOff = 0.03
 mainOutputDir = '../output'
 prefix = './../cells/'
 
@@ -28,7 +29,8 @@ try:
 except:
 	pass
 
-batchOutputDir = "%s/%s"%(mainOutputDir, cellsDir.replace(prefix, ""))
+batchOutputDir = "%s/%s"%(mainOutputDir, cellsDir.replace(prefix, ''))
+print(cellsDir, batchOutputDir)
 
 try:
 	os.mkdir(batchOutputDir)
@@ -74,7 +76,7 @@ for ROI in [i for i in ROIDirs if i not in ('.DS_Store', '._.DS_Store')]:
 	noBackCellGrey = []
 	for j in cellGrey.tolist():
 		for i in j:
-			if i < 240:
+			if i < cellThreshValue:
 				noBackCellGrey.append(i)
 
 	retFG, fakeNucThresh = cv2.threshold(np.array(noBackCellGrey).astype(np.uint8), 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
@@ -128,7 +130,7 @@ for ROI in [i for i in ROIDirs if i not in ('.DS_Store', '._.DS_Store')]:
 
 	#nuclear analysis
 
-	nucMinArea = int(cellArea*0.05)
+	nucMinArea = int(cellArea*donutCutOff)
 	ret, nucCon, hierarchyRaw = cv2.findContours(nucThresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
 	nucData = {i:{'hierarchy':list(hierarchyRaw[0][i])} for i in range(len(nucCon)) if cv2.contourArea(nucCon[i]) > nucMinArea}
 
