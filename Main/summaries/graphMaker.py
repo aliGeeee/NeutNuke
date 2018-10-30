@@ -43,8 +43,8 @@ nameDict = {'B2':'Prdm1 Cl 2',
 	'W2.6':'Wdr #2 Cl 6',
 	'UI':'Uninfected'}
 
-csvInDir = 'CSVfinal'
-csvOutDir = 'Graphs'
+csvInDir = 'csvs'
+csvOutDir = 'graphs'
 
 for day in daysCSV:
 	print(day)
@@ -67,9 +67,9 @@ for day in daysCSV:
 
 	plt.figure()
 	plt.title('Day {} low-lobed cell fraction'.format(day[:-5]))
-	rawLabelList = ['UI'] + sorted([i for i in df.index if i != 'UI'])
+	rawLabelList = sorted([i for i in df.index if i != 'UI'])
 	heightList = [(df['1'][i]+df['2'][i])*100 for i in rawLabelList]
-	labelList = [nameDict[i] for i in rawLabelList]
+	labelList = [i for i in rawLabelList]
 	bars = plt.bar(x = labelList, height = heightList)
 	n = 0
 	for rect in bars:
@@ -109,9 +109,9 @@ for day in daysCSV:
 
 	plt.figure()
 	plt.title('Day {} highly-lobed cell fraction'.format(day[:-5]))
-	rawLabelList = ['UI'] + sorted([i for i in df.index if i != 'UI'])
+	rawLabelList = sorted([i for i in df.index if i != 'UI'])
 	heightList = [(df['6'][i])*100 for i in rawLabelList]
-	labelList = [nameDict[i] for i in rawLabelList]
+	labelList = [i for i in rawLabelList]
 	bars = plt.bar(x = labelList, height = heightList, color = 'g')
 	n = 0
 	for rect in bars:
@@ -149,9 +149,9 @@ for day in daysCSV:
 
 	plt.figure()
 	plt.title('Day {} annular cell fraction'.format(day[:-5]))
-	rawLabelList = ['UI'] + sorted([i for i in df.index if i != 'UI'])
+	rawLabelList = sorted([i for i in df.index if i != 'UI'])
 	heightList = [(df['donutFrac'][i])*100 for i in rawLabelList]
-	labelList = [nameDict[i] for i in rawLabelList]
+	labelList = [i for i in rawLabelList]
 	bars = plt.bar(x = labelList, height = heightList, color = 'r')
 	n = 0
 	for rect in bars:

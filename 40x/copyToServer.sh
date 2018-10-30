@@ -1,1 +1,0 @@
-rsync -zarv -m --include="*/" --include='*.py' --include='*.sh' --exclude='*' . unix500:/home/gu.a/NeutScripts/NeutNuke/40x
