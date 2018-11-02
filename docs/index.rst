@@ -45,10 +45,12 @@ Individual module use
 ==================
 
 The `main/scripts/pipe.sh` script is actually just four independent scripts running together. They are located in `main/scripts`, and are, in order:
+
 * `cellIsolation.sh` (isolates individual cells from input .TIFF files)
 * `nucAnalysis.sh` (analyses nuclei and cells isolated from .TIFF cells)
 * `makeCSVS.sh` (generates summary statistics from nuclear and cell analysis)
 * `makeGraphs.sh` (generates graphs from summary statistics)
+
 These scripts may be run independently, but must be run in order.
 
 
